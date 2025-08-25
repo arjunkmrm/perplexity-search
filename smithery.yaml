@@ -1,23 +1,31 @@
-# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
-
+# Smithery configuration file: https://smithery.ai/docs/build/project-config/smithery-yaml
+runtime: "typescript"
 startCommand:
-  type: stdio
+  type: "http"
+  # JSON Schema defining the configuration options for the MCP.
   configSchema:
-    # JSON Schema defining the configuration options for the MCP.
-    type: object
+    type: "object"
     required:
-      - perplexityApiKey
+      - "perplexityApiKey"
     properties:
       perplexityApiKey:
-        type: string
-        description: Your Perplexity API key
-  commandFunction:
-    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
-    |-
-    (config) => ({
-      command: 'node',
-      args: ['dist/index.js'],
-      env: { PERPLEXITY_API_KEY: config.perplexityApiKey }
-    })
+        type: "string"
+        description: "Your Perplexity API key"
+      model:
+        type: "string"
+        enum: ["sonar", "sonar-pro"]
+        default: "sonar-pro"
+        description: "Perplexity model to use"
+      maxTokens:
+        type: "number"
+        default: 8192
+        description: "Maximum tokens for response"
+      temperature:
+        type: "number"
+        default: 0.2
+        description: "Temperature for response generation"
   exampleConfig:
-    perplexityApiKey: dummy_key_here
+    perplexityApiKey: "dummy_key_here"
+    model: "sonar-pro"
+    maxTokens: 8192
+    temperature: 0.2
