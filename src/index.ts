@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import axios, { AxiosError } from "axios";
 
 // Define interface for error response
 interface PerplexityErrorResponse {
@@ -22,12 +21,15 @@ export default function createServer({
 }: {
   config: z.infer<typeof configSchema>;
 }) {
+  // Parse config to ensure defaults are applied
+  const parsedConfig = configSchema.parse(config);
+  
   const server = new McpServer({
     name: "perplexity-search-server",
     version: "1.0.0",
   });
 
-  console.error(`Using Perplexity model: ${config.model}`);
+  console.error(`Using Perplexity model: ${parsedConfig.model}`);
 
   // Register the search tool
   server.registerTool(
@@ -45,15 +47,15 @@ export default function createServer({
 
       try {
         const payload: any = {
-          model: config.model,
+          model: parsedConfig.model,
           messages: [
             {
               role: "user",
               content: query
             }
           ],
-          max_tokens: config.maxTokens,
-          temperature: config.temperature
+          max_tokens: parsedConfig.maxTokens,
+          temperature: parsedConfig.temperature
         };
 
         // Add optional parameters if provided
@@ -61,19 +63,41 @@ export default function createServer({
           payload.search_recency_filter = search_recency_filter;
         }
 
-        console.error(`Using model: ${config.model}, max_tokens: ${config.maxTokens}, temperature: ${config.temperature}`);
+        console.error(`Using model: ${parsedConfig.model}, max_tokens: ${parsedConfig.maxTokens}, temperature: ${parsedConfig.temperature}`);
 
-        const response = await axios.post('https://api.perplexity.ai/chat/completions', payload, {
+        const response = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
           headers: {
-            'Authorization': `Bearer ${config.perplexityApiKey}`,
+            'Authorization': `Bearer ${parsedConfig.perplexityApiKey}`,
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify(payload)
         });
+
+        if (!response.ok) {
+          let errorMessage = `HTTP error! status: ${response.status}`;
+          try {
+            const errorData: PerplexityErrorResponse = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch {
+            // If JSON parsing fails, use the default error message
+          }
+          
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Perplexity API error: ${errorMessage}`
+            }],
+            isError: true
+          };
+        }
+
+        const responseData = await response.json();
         
         // Format the response to only include content and citations
         const formattedResponse = {
-          content: response.data.choices[0].message.content,
-          citations: response.data.citations || []
+          content: responseData.choices[0].message.content,
+          citations: responseData.citations || []
         };
         
         return {
@@ -83,20 +107,15 @@ export default function createServer({
           }]
         };
       } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-          const axiosError = error as AxiosError<PerplexityErrorResponse>;
-          const errorData = axiosError.response?.data;
-          const errorMessage = errorData?.error || errorData?.message || axiosError.message;
-          
-          return {
-            content: [{
-              type: "text" as const, 
-              text: `Perplexity API error: ${errorMessage}`
-            }],
-            isError: true
-          };
-        }
-        throw error;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        
+        return {
+          content: [{
+            type: "text" as const, 
+            text: `Perplexity API error: ${errorMessage}`
+          }],
+          isError: true
+        };
       }
     }
   );
