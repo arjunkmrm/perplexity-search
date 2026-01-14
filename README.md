@@ -31,4 +31,4 @@ The response from the `search` tool includes:
 
 ## License
 
-MIT 
+MIT
