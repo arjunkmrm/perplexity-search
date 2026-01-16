@@ -1,6 +1,6 @@
 # Perplexity Search MCP
 
-[![smithery badge](https://smithery.ai/badge/@arjunkmrm/perplexity-search)](https://smithery.ai/server/@arjunkmrm/perplexity-search)
+[![smithery badge](https://smithery.ai/badge/arjunkmrm/websets)](https://smithery.ai/server/arjunkmrm/websets) [![smithery badge](https://smithery.ai/badge/@arjunkmrm/perplexity-search)](https://smithery.ai/server/@arjunkmrm/perplexity-search)
 
 A simple Model Context Protocol (MCP) server for Perplexity's web search with sonar or sonar-pro.
 
@@ -31,4 +31,4 @@ The response from the `search` tool includes:
 
 ## License
 
-MIT 
+MIT
